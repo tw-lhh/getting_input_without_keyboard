@@ -1,8 +1,7 @@
 import cv2
 import mediapipe as mp
 import time
-import random
-import pyautogui
+import keyboard
 
 cap = cv2.VideoCapture(0) #開啟攝影機
 
@@ -17,9 +16,12 @@ handConStyle =  mpDraw.DrawingSpec(color=(20, 255, 20), thickness=2)
 pTime = 0 #先前時間
 cTime = 0 #目前時間
 
+
 #建立座標array
 Px = [0] * 21
 Py = [0] * 21
+
+number = 0
 
 #手指判斷變數
 fg1, fg2, fg3, fg4 = False, False, False, False
@@ -68,7 +70,6 @@ def finger_detecting(rl_hand, Px, Py):
     for k in (5,6,7):
         a = Py[k]
         b = Py[k+1]
-        #print(k, Py[k])
         if a > b :
             fg1 = True   
         elif a < b :
@@ -123,8 +124,7 @@ def finger_recognizing(fg1, fg2, fg3, fg4, fg00):
     if fg3 and not (fg00 or fg2 or fg1 or fg4):
         print("  3  \n")
 
-    if fg4 and not (fg00 or fg2 or fg3 or fg1):
-        print("  4  \n")
+    if fg4 and not (fg00 or fg2 or fg3 or fg1):6004
     '''
 
 
@@ -132,46 +132,66 @@ def finger_recognizing(fg1, fg2, fg3, fg4, fg00):
 
 #"手勢數字"辨識
 def gesture_recognizing(fg1, fg2, fg3, fg4, fg00):
-    
+    global number
     if not (fg1 or fg2 or fg3 or fg4 or fg00):
+        number = 0
         print("  0  \n")
-        pyautogui.press('0')
+        keyboard.press('0')
+        keyboard.release('0')
 
     if fg1 and not (fg2 or fg3 or fg4 or fg00):
+        number = 1
         print("  1  \n")
-        pyautogui.press('1')
+        keyboard.press('1')
+        keyboard.release('1')
 
     if fg1 and fg2 and not (fg3 or fg4 or fg00):
+        number = 2
         print("  2  \n")
-        pyautogui.press('2')
+        keyboard.press('2')
+        keyboard.release('2')
 
     if fg1 and fg2  and fg3 and not (fg4 or fg00):
+        number = 3
         print("  3  \n")
-        pyautogui.press('3')
+        keyboard.press('3')
+        keyboard.release('3')
 
     if fg1 and fg2  and fg3 and fg4 and not (fg00):
+        number = 4
         print("  4  \n")
-        pyautogui.press('4')
+        keyboard.press('4')
+        keyboard.release('4')
 
     if fg1 and fg2  and fg3 and fg4 and fg00:
+        number = 5
         print("  5  \n")
-        pyautogui.press('5')
+        keyboard.press('5')
+        keyboard.release('5')
 
     if fg4 and fg00 and not (fg1 or fg2 or fg3):
+        number = 6
         print("  6  \n")
-        pyautogui.press('6')
+        keyboard.press('6')
+        keyboard.release('6')
 
     if fg1 and fg00 and not (fg2 or fg3 or fg4):
+        number = 7
         print("  7  \n")
-        pyautogui.press('7')
+        keyboard.press('7')
+        keyboard.release('7')
 
     if fg1 and fg2 and fg00 and not (fg3 or fg4):
+        number = 8
         print("  8  \n")
-        pyautogui.press('8')
+        keyboard.press('8')
+        keyboard.release('8')
 
     if fg1 and fg2 and fg00 and fg3 and not (fg4):
+        number = 9
         print("  9  \n")
-        pyautogui.press('9')
+        keyboard.press('9')
+        keyboard.release('9')
 
     
 
@@ -180,6 +200,7 @@ def gesture_recognizing(fg1, fg2, fg3, fg4, fg00):
 
 #執行迴圈
 while True:
+    
     ret, window = cap.read() #讀取影像
     #cv2.namedWindow('window', cv2.WINDOW_KEEPRATIO)
     if ret:
@@ -235,9 +256,14 @@ while True:
         fps = 1/(cTime - pTime)
         pTime = cTime
         cv2.putText(window, 'fps:'+str(int(fps)), (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 3)
+        #顯示辨識到的數字在視窗上
+        cv2.putText(window, 'number:' + str(number), (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 200), 3)
+        
+
+        cv2.imshow('window', window) 
 
         
-        cv2.imshow('window', window) 
+
 
     #按下Q鍵結束程式碼
     if cv2.waitKey(1) == ord('q') or cv2.waitKey(1) == ord('Q'):
