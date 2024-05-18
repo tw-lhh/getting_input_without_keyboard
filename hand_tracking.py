@@ -2,11 +2,12 @@ import cv2
 import mediapipe as mp
 import time
 import keyboard
+from cvzone.HandTrackingModule import HandDetector 
+import cvzone
 
 cap = cv2.VideoCapture(0) #開啟攝影機
-
 mpHands = mp.solutions.hands # mediapipe 偵測手掌方法
-hands = mpHands.Hands()
+hands = mpHands.Hands(max_num_hands=1)
 mpDraw = mp.solutions.drawing_utils # mediapipe 繪圖方法
 
 #點與線的樣式
@@ -29,26 +30,47 @@ fg1, fg2, fg3, fg4 = False, False, False, False
 #開為正，反之
 fg00 = False
 
+#正->0，右->1，左->2
+palm_directions = 0
+
 #右手正，左手負
 rl_hand = True
 
 
+#手掌開向辨識
+def palm_direction(Px, Py):
+    global palm_directions
+    
+    if Px[0] > Px[5] and Px[0] > Px[17]:
+        palm_directions = 1 #右彎
+    elif Px[5] > Px[0] and Px[17] > Px[0]:
+        palm_directions = 2 #左彎
+    elif Py[0] > Py[9]:
+        palm_directions = 0 #正
+        
 
 #左、右手辨識
-def right_or_left(Px):
+def right_or_left(Px, Py):
     global rl_hand
-    
-    if Px[5] > Px[17]:
-        rl_hand = True#右手
+    if palm_directions == 1:
+        if Py[17] > Py[5]:
+            rl_hand = True
+        elif Py[5] > Py[17]:
+            rl_hand = False
+    elif palm_directions == 2:
+        if Py[5] > Py[17]:
+            rl_hand = True
+        elif Py[17] > Py[5]:
+            rl_hand = False
+    elif palm_directions == 0:
+        if Px[5] > Px[17]:
+            rl_hand = True#右手
+        elif Px[5] < Px[17]:
+            rl_hand = False#左手
 
-    elif Px[5] < Px[17]:
-        rl_hand = False#左手   
 
-
-
-
-#"手指開合"辨識
-def finger_detecting(rl_hand, Px, Py):
+#"手指開合"辨識:方向編號0
+def finger_detecting_0(rl_hand, Px, Py):
     global fg1, fg2, fg3, fg4
     global fg00
 
@@ -106,6 +128,134 @@ def finger_detecting(rl_hand, Px, Py):
             fg4 = False
 
 
+#"手指開合"辨識:方向編號1(手掌向右)
+def finger_detecting_1(rl_hand, Px, Py):
+    global fg1, fg2, fg3, fg4
+    global fg00
+
+    #大拇指(先進行左右手辨識，再辨識大拇指)
+    if rl_hand:
+        for k in (1,2,3):
+            a = Py[k]
+            b = Py[k+1]
+            if a > b :
+                fg00 = True   
+            elif a < b :
+                fg00 = False
+
+    elif rl_hand == False:
+        for k in (1,2,3):
+            a = Py[k]
+            b = Py[k+1]
+            if a < b :
+                fg00 = True   
+            elif a > b :
+                fg00 = False
+
+
+    #食指
+    for k in (5,6,7):
+        a = Px[k]
+        b = Px[k+1]
+        if a > b :
+            fg1 = True   
+        elif a < b :
+            fg1 = False
+
+
+    #中指
+    for k in (9,10,11):
+        a = Px[k]
+        b = Px[k+1]
+        if a > b:
+            fg2 = True
+        elif a < b :
+            fg2 = False
+
+
+    #無名指
+    for k in (13,14,15):
+        a = Px[k]
+        b = Px[k+1]
+        if a > b:
+            fg3 = True
+        elif a < b :
+            fg3 = False
+
+
+    #小拇指 
+    for k in (17,18,19):
+        a = Px[k]
+        b = Px[k+1]
+        if a > b:
+            fg4 = True
+        elif a < b :
+            fg4 = False
+
+
+#"手指開合"辨識:方向變號2(手掌向左)
+def finger_detecting_2(rl_hand, Px, Py):
+    global fg1, fg2, fg3, fg4
+    global fg00
+
+    #大拇指(先進行左右手辨識，再辨識大拇指)
+    if rl_hand:
+        for k in (1,2,3):
+            a = Py[k]
+            b = Py[k+1]
+            if a < b :
+                fg00 = True   
+            elif a > b :
+                fg00= False
+
+    elif rl_hand == False:
+        for k in (1,2,3):
+            a = Py[k]
+            b = Py[k+1]
+            if a > b :
+                fg00 = True   
+            elif a < b :
+                fg00= False
+
+
+    #食指
+    for k in (5,6,7):
+        a = Px[k]
+        b = Px[k+1]
+        if a < b :
+            fg1 = True   
+        elif a > b :
+            fg1 = False
+
+
+    #中指
+    for k in (9,10,11):
+        a = Px[k]
+        b = Px[k+1]
+        if a < b:
+            fg2 = True
+        elif a > b :
+            fg2 = False
+
+
+    #無名指
+    for k in (13,14,15):
+        a = Px[k]
+        b = Px[k+1]
+        if a < b:
+            fg3 = True
+        elif a > b :
+            fg3 = False
+
+
+    #小拇指 
+    for k in (17,18,19):
+        a = Px[k]
+        b = Px[k+1]
+        if a < b:
+            fg4 = True
+        elif a > b :
+            fg4 = False
 
 
 #"手指"辨識
@@ -126,8 +276,6 @@ def finger_recognizing(fg1, fg2, fg3, fg4, fg00):
 
     if fg4 and not (fg00 or fg2 or fg3 or fg1):6004
     '''
-
-
 
 
 #"手勢數字"辨識
@@ -193,10 +341,6 @@ def gesture_recognizing(fg1, fg2, fg3, fg4, fg00):
         keyboard.press('9')
         keyboard.release('9')
 
-    
-
-
-
 
 #執行迴圈
 while True:
@@ -235,19 +379,26 @@ while True:
                         
                         #print(i, xPos ,yPos ) #印出點,X座標,Y座標  *i是0到20(21個point)
                         
-                        
-
+                    #手掌開向辨識
+                    palm_direction(Px, Py)    
+                    
                     #左右手判讀
-                    right_or_left(Px)
-
+                    right_or_left(Px, Py)
+                    
                     #手指開合判讀
-                    finger_detecting(rl_hand, Px, Py)
-
+                    if palm_directions == 0:
+                        finger_detecting_0(rl_hand, Px, Py)
+                    elif palm_directions == 1:
+                        finger_detecting_1(rl_hand, Px, Py)
+                    elif palm_directions == 2:
+                        finger_detecting_2(rl_hand, Px, Py)
+                    
                     #手指編號輸出
                     #finger_recognizing(fg1, fg2, fg3, fg4, fg00)
                     
                     #手勢編號輸出
                     gesture_recognizing(fg1, fg2, fg3, fg4, fg00)
+            
                     
 
 
@@ -257,7 +408,7 @@ while True:
         pTime = cTime
         cv2.putText(window, 'fps:'+str(int(fps)), (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 3)
         #顯示辨識到的數字在視窗上
-        cv2.putText(window, 'number:' + str(number), (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 200), 3)
+        cv2.putText(window, 'number:' + str(number), (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255228), 3)
         
 
         cv2.imshow('window', window) 

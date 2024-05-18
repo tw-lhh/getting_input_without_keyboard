@@ -21,6 +21,7 @@ BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+DEEP_BLUE = (30, 30, 100)
 
 #載入音樂
 pygame.mixer.music.load(os.path.join("music", "Lobby-Time.mp3"))
@@ -42,38 +43,38 @@ pygame.display.set_icon(mini_image)
 '''
 # 定義每個題目
 question_1 = {
-    "question": "設一方程式為f(x)=x²+3x-1，求f(2)時的切線斜率?",
+    "questions": ["設一方程式f(x)=x²+3x-1，求f(2)時的切線斜率?"],
     "options": ["(1). 3", "(2). 5", "(3). 7", "(4). 6"],
     "correct_answer": 3,
     "used": False
 }
 question_2 = {
-    "question": "What is the largest planet in our solar system?",
-    "options": ["(1). Earth", "(2). Jupiter", "(3). Saturn", "(4). Mars"],
-    "correct_answer": 2,
+    "questions": ["設一方程式f(x)=2x+4，求其與x=0，x=4，", "y=0所圍成的區域面積R?"],
+    "options": ["(1). 12", "(2). 16", "(3). 48", "(4). 32"],
+    "correct_answer": 4,
     "used": False
 }
 question_3 = {
-    "question": "Who painted the Mona Lisa?",
-    "options": ["(1). Leonardo da Vinci", "(2). Vincent van Gogh", "(3). Pablo Picasso", "(4). Michelangelo"],
+    "questions": ["下列何者分子之間可以存在氫鍵?"],
+    "options": ["(1). H₂O", "(2). CO₂", "(3). CH₄", "(4). NO₂"],
     "correct_answer": 1,
     "used": False
 }
 question_4 = {
-    "question": "What is the chemical symbol for water?",
-    "options": ["(1). H2O", "(2). CO2", "(3). NaCl", "(4). O2"],
-    "correct_answer": 1,
+    "questions": ["CO₂分子中的π鍵是由哪種軌域結合成?"],
+    "options": ["(1). (sp²-p)", "(2). (p-p)", "(3). (sp-sp)", "(4). (sp³-s)"],
+    "correct_answer": 2,
     "used": False
 }
 question_5 = {
-    "question": "Which planet is known as the Red Planet?",
+    "questions": ["Which planet is known as the Red Planet?"],
     "options": ["(1). Mars", "(2). Venus", "(3). Jupiter", "(4). Saturn"],
     "correct_answer": 1,
     "used": False
 }
 
 #包含題目的陣列
-questions = [question_1, question_2, question_3, question_4, question_5]
+all_questions = [question_1, question_2, question_3, question_4, question_5]
 
 #引用字體
 font_name = os.path.join("Iansui-Regular.ttf")   
@@ -95,9 +96,12 @@ def draw_text_center(surf, text, size, x, y, color):   #畫出字體(表面,文�
 
 #初始介面
 def Initial_interface():
-    draw_text_center(screen, '*手勢辨識*', 64, WIDTH/2, HEIGHT/2 - 100, BLACK)  #引用draw_text函式
-    draw_text_center(screen, '選擇題遊戲', 64, WIDTH/2, HEIGHT/2, BLACK) 
-    draw_text_center(screen, '按下任意鍵開始遊戲', 50, WIDTH/2, HEIGHT/2 + 100, BLACK) 
+    draw_text_center(screen, '*手勢辨識*', 70, WIDTH/2, HEIGHT/2-200, BLACK)  #引用draw_text函式
+    draw_text_center(screen, '選擇題遊戲', 70, WIDTH/2, HEIGHT/2 -100, BLACK) 
+    draw_text_center(screen, '按下任意鍵開始遊戲', 50, WIDTH/2, HEIGHT/2 -10, BLACK) 
+    draw_text_center(screen, '<遊戲說明>', 36, WIDTH/2, HEIGHT/2 + 50, DEEP_BLUE)
+    draw_text_center(screen, '手比出數字可以選擇選項；確定選項後再比0作為確認', 36, WIDTH/2, HEIGHT/2 + 100, DEEP_BLUE)  
+    draw_text_center(screen, '*小提醒：手掌要對著鏡頭喔:D*', 36, WIDTH/2, HEIGHT/2 + 150, DEEP_BLUE)
     pygame.display.update()  #更新畫面
     waiting = True
     while waiting:
@@ -115,11 +119,23 @@ def Initial_interface():
 def final_interface():
     global show_init, show_final
     draw_text_center(screen, '遊戲結束', 64, WIDTH/2, HEIGHT/4, BLACK)
-    draw_text_center(screen, '總分:'+str(score), 64, WIDTH/2, HEIGHT/4+100, BLACK)
+    draw_text_center(screen, '總分:'+str(score), 64, WIDTH/2, HEIGHT/4+100, BLACK) 
+    if score >= 60:
+        draw_text_center(screen, '":0 及格了，真棒"', 50, WIDTH/2, HEIGHT/4 + 180, BLACK)
+    elif score < 60:
+        draw_text_center(screen, '"x0 可惜了，沒及格"', 50, WIDTH/2, HEIGHT/4 + 260, BLACK)
     pygame.display.update()
     time.sleep(5)
     show_final = False
     show_init = True
+
+#時間倒數
+def time_counting(waiting_time):
+    while waiting_time > 0:
+        draw_text_center(screen, str(waiting_time)+'秒後回到首頁', 50, WIDTH/2, HEIGHT/4 + 340, BLACK)
+        time.sleep(1)
+        waiting_time -= 1
+
 
 #畫出紅色框
 def red_frame(surf, x, frame_y):
@@ -129,24 +145,28 @@ def red_frame(surf, x, frame_y):
     pygame.draw.rect(surf, RED, outline_rect, 5)  #畫出(在甚麼平面, 顏色, outline_rect, 像素)
 
 # 隨機選擇一個題目
-def Q_random(questions):
+def Q_random(all_questions):
     global current_question, question_text, options, correct_answer, show_init, show_final
     red_frame(screen, 0, 1000)
-    if not questions:  # 如果所有題目都已經使用完畢，重新加入所有題目
+    if not all_questions:  # 如果所有題目都已經使用完畢，重新加入所有題目
         show_final = True
-        questions.extend([question_1, question_2, question_3, question_4, question_5])
-    current_question = random.choice(questions) #隨機選擇一個未使用過的題目
-    questions.remove(current_question)  # 從列表中移除已選擇的題目
-    question_text = current_question["question"] #放入字串
+        all_questions.extend([question_1, question_2, question_3, question_4, question_5])
+
+    current_question = random.choice(all_questions) #隨機選擇一個未使用過的題目
+    all_questions.remove(current_question)  # 從列表中移除已選擇的題目
+    question_text = current_question["questions"] #題目 = 選到之題目
     options = current_question["options"] #選項 = 選到題目之選項
     correct_answer = current_question["correct_answer"] #答案 = 選到題目之答案
     
 #顯示問題
-def display_question(question, options):
+def display_question(qquestion_text, options):
     screen.fill(WHITE)
     screen.blit(background_image, (0,0))
-    draw_text_left(screen, question, 42, 150, 120, BLACK)
-    y = 250
+    y = 120
+    for question in question_text:
+        draw_text_left(screen, question, 42, 150, y, BLACK)
+        y += 60
+    y = 280
     for option in options:
         draw_text_left(screen, option, 42, 180, y, BLACK)
         y += 100
@@ -173,7 +193,7 @@ def keydown():
         selected_answer = 4
         print(4)
     if selected_answer != None:
-        frame_y = 250 + (selected_answer - 1) * 100 -20
+        frame_y = 280 + (selected_answer - 1) * 100 -20
     
 #確認答案&顯示
 def ans_checking():
@@ -194,7 +214,7 @@ def ans_checking():
                 time.sleep(1.5)
             selected_answer = None
             #選擇完答案後，再次隨機選擇一個題目並顯示
-            Q_random(questions)
+            Q_random(all_questions)
             display_question(question_text, options)
         else:
             print("Please select an answer first!")
@@ -220,7 +240,7 @@ while running:
         Initial_interface()
         show_init = False
         # 顯示題目
-        Q_random(questions)
+        Q_random(all_questions)
         display_question(question_text, options)
     if show_final:
         final_interface()
